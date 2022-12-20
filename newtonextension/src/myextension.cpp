@@ -286,8 +286,16 @@ static int createMeshFromCollision( lua_State *L )
         lua_pushnumber(L, meshes.size() - 1);
 
         NewtonMeshTriangulate(mesh);
-        NewtonMeshCalculateVertexNormals(mesh, 1.05f);
+        NewtonMeshCalculateVertexNormals(mesh, 0.3f);
 
+        dMatrix aligmentUV(dGetIdentityMatrix());
+        if(mapping == 1)
+            NewtonMeshApplySphericalMapping(mesh, 0, &aligmentUV[0][0]);
+        else if(mapping == 2)
+            NewtonMeshApplyCylindricalMapping(mesh, 0, 0, &aligmentUV[0][0]);
+        else
+            NewtonMeshApplyBoxMapping(mesh, 0, 0, 0, &aligmentUV[0][0]);
+        
         int faceCount = NewtonMeshGetTotalFaceCount (mesh); 
         int indexCount = NewtonMeshGetTotalIndexCount (mesh); 
         int pointCount = NewtonMeshGetPointCount (mesh);
@@ -301,16 +309,7 @@ static int createMeshFromCollision( lua_State *L )
         memset (vertices, 0, 3 * indexCount * sizeof (dFloat));
         memset (normals, 0, 3 * indexCount * sizeof (dFloat));
         memset (uvs, 0, 2 * indexCount * sizeof (dFloat));
-
-        dMatrix aligmentUV(dGetIdentityMatrix());
-        if(mapping == 1)
-            NewtonMeshApplySphericalMapping(mesh, 0, &aligmentUV[0][0]);
-        else if(mapping == 2)
-            NewtonMeshApplyCylindricalMapping(mesh, 0, 0, &aligmentUV[0][0]);
-        else
-            NewtonMeshApplyBoxMapping(mesh, 0, 0, 0, &aligmentUV[0][0]);
        
-
         int* faceArray = new int [faceCount];
         void** indexArray = new void* [indexCount];
         int* materialIndexArray = new int [faceCount];
@@ -319,12 +318,19 @@ static int createMeshFromCollision( lua_State *L )
         NewtonMeshGetFaces (mesh, faceArray, materialIndexArray, indexArray); 
         NewtonMeshGetUV0Channel(mesh, 2 * sizeof (dFloat), uvs);
         NewtonMeshGetNormalChannel(mesh, 3 * sizeof (dFloat), normals);
+
+        dFloat *mappedNormals = new dFloat[3 * indexCount];
         
         for (int i = 0; i < indexCount; i ++) {
 
             // int fcount = faceArray[i];
             int index = NewtonMeshGetVertexIndex (mesh, indexArray[i]);            
             int pindex = NewtonMeshGetPointIndex(mesh, indexArray[i]);
+
+            mappedNormals[i * 3] = normals[pindex * 3];
+            mappedNormals[i * 3+1] = normals[pindex * 3 + 1];
+            mappedNormals[i * 3+2] = normals[pindex * 3 + 2];
+                        
             remapedIndexArray[i] = index;
          }
         
@@ -332,7 +338,7 @@ static int createMeshFromCollision( lua_State *L )
         AddTableVertices(L, NewtonMeshGetVertexCount(mesh)*4, NewtonMeshGetVertexArray(mesh));
 
         AddTableUVs( L, indexCount * 2, uvs );
-        AddTableNormals( L, indexCount * 3, normals );
+        AddTableNormals( L, indexCount * 3, mappedNormals );
 
         // Cleanup
         delete [] faceArray;

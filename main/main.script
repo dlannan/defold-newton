@@ -62,7 +62,7 @@ function init(self)
 	self.collcone = newtonextension.addcollisioncone(1, 2)
 	self.collcapsule = newtonextension.addcollisioncapsule(0.5, 0.5, 0.75)
 	self.collcylinder = newtonextension.addcollisioncylinder(0.7, 0.7, 2.0)
-	self.collchamfercylinder = newtonextension.addcollisionchamfercylinder(0.5, 0.6)
+	self.collchamfercylinder = newtonextension.addcollisionchamfercylinder(0.7, 0.2)
 	--self.collconvexhull = newtonextension.addcollisionconvexhull(24, vertcloud)
 
 	self.bodies = {}
