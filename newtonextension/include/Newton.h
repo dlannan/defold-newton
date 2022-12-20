@@ -36,7 +36,6 @@
 	#define NEWTON_API DG_LIBRARY_IMPORT
 #endif
 
-
 #ifndef dLong
 	#define dLong long long		
 #endif
