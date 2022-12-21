@@ -13,7 +13,7 @@
 
 static NewtonWorld* world = NULL;
 
-static std::vector<NewtonBody* >bodies;
+static std::vector<NewtonBody*  >bodies;
 static std::vector<NewtonCollision*> colls;
 static std::vector<NewtonMesh* >meshes;
 
@@ -259,6 +259,85 @@ static int addBody( lua_State *L ) {
     return 1;
 }
 
+static int bodyGetMass( lua_State *L )
+{
+    lua_pushnumber(L, NewtonBodyGetMass() );
+    return 1;
+}
+
+static int bodySetMassProperties( lua_State *L )
+{
+    int collindex = lua_tonumber(L, 1);
+    if(collindex < 0 || collindex > colls.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+    int bodyindex = lua_tonumber(L, 2);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    float mass = lua_tonumber(L, 3);
+
+    NewtonBodySetMassProperties( bodies[bodyindex], mass, colls[collindex])
+}
+
+static void UserDataHandle() {
+}
+
+static int bodySetUserData( lua_State *L )
+{
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    NewtonBodySetUserData(bodies[bodyindex], UserDataHandle);
+}
+
+static int bodySetLinearDamping( lua_State *L )
+{
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }    
+    float damping = lua_tonumber(L, 2);
+    NewtonBodySetLinearDamping( bodies[bodyindex], damping );
+}
+
+static int bodySetAngularDamping( lua_State *L )
+{
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }    
+    float damping = lua_tonumber(L, 2);
+    NewtonBodySetAngularDamping( bodies[bodyindex], damping );
+}
+
+static int bodySetMassMatrix( lua_State *L )
+{
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }    
+    float *massmatrix = (float *)lua_topointer(L, 2);
+    NewtonBodySetMassMatrix( bodies[bodyindex], massmatrix );
+}
+
+static int bodyGetCentreOfMass( lua_State *L )
+{
+}
+
+static int bodySetForceAndTorqueCallback( lua_State *L )
+{
+}
+
 static int Create( lua_State *L )
 {
     // Print the library version.
@@ -401,16 +480,25 @@ static const luaL_reg Module_methods[] =
     {"update", Update}, 
     {"close", Close},
     
-    {"addcollisionplane", addCollisionPlane },
-    {"addcollisioncube", addCollisionCube },
-    {"addcollisionsphere", addCollisionSphere },
-    {"addcollisioncone", addCollisionCone },
-    {"addcollisioncapsule", addCollisionCapsule },
-    {"addcollisioncylinder", addCollisionCylinder },
-    {"addcollisionchamfercylinder", addCollisionChamferCylinder },
-    {"addcollisionconvexhull", addCollisionConvexHull },
+    {"collision_addplane", addCollisionPlane },
+    {"collision_addcube", addCollisionCube },
+    {"collision_addsphere", addCollisionSphere },
+    {"collision_addcone", addCollisionCone },
+    {"collision_addcapsule", addCollisionCapsule },
+    {"collision_addcylinder", addCollisionCylinder },
+    {"collision_addchamfercylinder", addCollisionChamferCylinder },
+    {"collision_addconvexhull", addCollisionConvexHull },
+    {"collision_destroy", destroyCollision },
 
-    {"addbody", addBody },
+    {"body_add", addBody },
+    {"body_getmass", bodyGetMass },
+    {"body_setmassproperties", bodySetMassProperties },
+    {"body_setuserdata", bodySetUserData },
+    {"body_setlineardamping", bodySetLinearDamping },
+    {"body_setangulardamping", bodySetAngularDamping },
+    {"body_setmassmatrix", bodySetMassMatrix },
+    {"body_getcentreofmass", bodyGetCentreOfMass },
+    {"body_setforceandtorquecallback", bodySetForceAndTorqueCallback },
 
     {"createmeshfromcollision", createMeshFromCollision },
     {0, 0}
