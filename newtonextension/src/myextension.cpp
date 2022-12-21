@@ -325,11 +325,11 @@ static int createMeshFromCollision( lua_State *L )
 
             // int fcount = faceArray[i];
             int index = NewtonMeshGetVertexIndex (mesh, indexArray[i]);            
-            int pindex = NewtonMeshGetPointIndex(mesh, indexArray[i]);
+            //int pindex = NewtonMeshGetPointIndex(mesh, indexArray[i]);
 
-            mappedNormals[i * 3] = normals[pindex * 3];
-            mappedNormals[i * 3+1] = normals[pindex * 3 + 1];
-            mappedNormals[i * 3+2] = normals[pindex * 3 + 2];
+            mappedNormals[i * 3] = normals[index * 3];
+            mappedNormals[i * 3+1] = normals[index * 3 + 1];
+            mappedNormals[i * 3+2] = normals[index * 3 + 2];
                         
             remapedIndexArray[i] = index;
          }

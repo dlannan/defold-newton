@@ -148,39 +148,7 @@ function init(self)
 end
 
 -- --------------------------------------------------------------------------------------------------------
--- Make a quaternion from a view vector with UP as the axis rotation.
-local function rotationTo( vec )
 
-	local out = vmath.quat()
-	local left = vmath.vector3(1,0,0)
-	local up  = vmath.vector3(0,1,0)
-	
-	local dot = vmath.dot(vec, up)
-	if (dot < -0.999999) then 
-		local tmp = vmath.cross(up, vec)
-		if (vmath.length(tmp) < 0.000001) then	tmp = vec3.cross(left, vec) end
-		tmp = vmath.normalize(tmp)
-		out = vmath.quat_axis_angle(tmp, math.pi)
-	else
-		if (dot > 0.999999) then 
-			out.x = 0
-			out.y = 0
-			out.z = 0
-			out.w = 1
-		else 
-			local tmp = vmath.cross(vec, up)
-			out.x = tmp.x
-			out.y = tmp.y
-			out.z = tmp.z
-			out.w = 1 + dot;
-			out = vmath.normalize(out)
-		end 
-	end
-	return out
-end 
-
--- --------------------------------------------------------------------------------------------------------
-local NEWTON_MIN_TIMESTEP 	= 0.016
 function update(self, delta)
 
 	local newt = os.clock()
@@ -189,7 +157,7 @@ function update(self, delta)
 	
 	-- Update returns all the current bodies position and rotation info. { { pos = { x,y,z }, rot = { x, y, z, w } }
 	-- This forces a minimum of 60Hz physics - this may be too quick.
-	local bodies = newtonextension.update(math.max(0.016, diff))
+	local bodies = newtonextension.update(math.max(delta, diff))
 	updateBodyObjects( self, bodies )
 	
 	camdrive.update(self, diff)
