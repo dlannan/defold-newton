@@ -1,5 +1,5 @@
 # C++ symbol in your extension
-name: "NewtonExtension"
+name: "Newton"
 
 # App manifest generated Tue Dec 20 2022 17:43:23 GMT+1030 (Australian Central Daylight Time)
 # Settings: Physics2D,Physics3D,OpenGL

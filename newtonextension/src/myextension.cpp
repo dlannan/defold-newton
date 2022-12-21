@@ -1,13 +1,14 @@
 // myextension.cpp
 // Extension lib defines
-#define LIB_NAME "NewtonExtension"
-#define MODULE_NAME "newtonextension"
+#define LIB_NAME "Newton"
+#define MODULE_NAME "newton"
 
 // include the Defold SDK
 #include <dmsdk/sdk.h>
 #include <stdlib.h>
 #include <Newton.h>
 #include <vector>
+#include <map>
 
 #include <dMatrix.h>
 
@@ -16,6 +17,12 @@ static NewtonWorld* world = NULL;
 static std::vector<NewtonBody*  >bodies;
 static std::vector<NewtonCollision*> colls;
 static std::vector<NewtonMesh* >meshes;
+
+
+static std::map<int, int>   bodyUserData;
+static std::map<NewtonBody* , int>   bodyCallback;
+
+lua_State *cbL = NULL;
 
 // Define a custom data structure to store a body ID.
 struct UserData {
@@ -227,6 +234,19 @@ static int worldRayCast( lua_State *L ) {
     return 0;
 }
 
+static int destroyCollision(lua_State *L)
+{
+    int collindex = lua_tonumber(L, 1);
+    if(collindex < 0 || collindex > colls.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+    NewtonDestroyCollision(colls[collindex]);
+    colls.erase(colls.begin() + collindex);
+    lua_pushnumber(L, 1);
+    return 1;
+}
+
 static int addBody( lua_State *L ) {
 
     // Neutral transform matrix.
@@ -261,8 +281,22 @@ static int addBody( lua_State *L ) {
 
 static int bodyGetMass( lua_State *L )
 {
-    lua_pushnumber(L, NewtonBodyGetMass() );
-    return 1;
+    int bodyindex = lua_tonumber(L, 2);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
+    dFloat mass = 0.0f;
+    dFloat Ixx = 0.0f;
+    dFloat Iyy = 0.0f;
+    dFloat Izz = 0.0f;
+    NewtonBodyGetMass( bodies[bodyindex], &mass, &Ixx, &Iyy, &Izz);
+    lua_pushnumber(L, mass );
+    lua_pushnumber(L, Ixx );
+    lua_pushnumber(L, Iyy );
+    lua_pushnumber(L, Izz );
+    return 4;
 }
 
 static int bodySetMassProperties( lua_State *L )
@@ -280,10 +314,22 @@ static int bodySetMassProperties( lua_State *L )
 
     float mass = lua_tonumber(L, 3);
 
-    NewtonBodySetMassProperties( bodies[bodyindex], mass, colls[collindex])
+    NewtonBodySetMassProperties( bodies[bodyindex], mass, colls[collindex]);
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
-static void UserDataHandle() {
+static int bodyGetUserData( lua_State *L )
+{
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    // int *tablerefptr = NewtonBodyGetUserData(bodies[bodyindex]);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, bodyUserData[bodyindex]);
+    return 1;
 }
 
 static int bodySetUserData( lua_State *L )
@@ -294,7 +340,14 @@ static int bodySetUserData( lua_State *L )
         return 1;
     }
 
-    NewtonBodySetUserData(bodies[bodyindex], UserDataHandle);
+    // Grab the ref to the table passed in as the second arg
+    int tableref = luaL_ref(L, LUA_REGISTRYINDEX);
+    std::pair<int, int> tuple(bodyindex, tableref);
+    bodyUserData.insert(tuple);
+
+    //NewtonBodySetUserData(bodies[bodyindex], &tuple.second());
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int bodySetLinearDamping( lua_State *L )
@@ -306,6 +359,8 @@ static int bodySetLinearDamping( lua_State *L )
     }    
     float damping = lua_tonumber(L, 2);
     NewtonBodySetLinearDamping( bodies[bodyindex], damping );
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int bodySetAngularDamping( lua_State *L )
@@ -315,8 +370,10 @@ static int bodySetAngularDamping( lua_State *L )
         lua_pushnil(L);
         return 1;
     }    
-    float damping = lua_tonumber(L, 2);
-    NewtonBodySetAngularDamping( bodies[bodyindex], damping );
+    dFloat damping[4] = { (float)lua_tonumber(L, 2), (float)lua_tonumber(L, 3), (float)lua_tonumber(L, 4), (float)lua_tonumber(L, 5) };
+    NewtonBodySetAngularDamping( bodies[bodyindex], (dFloat *)&damping );
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int bodySetMassMatrix( lua_State *L )
@@ -326,20 +383,77 @@ static int bodySetMassMatrix( lua_State *L )
         lua_pushnil(L);
         return 1;
     }    
-    float *massmatrix = (float *)lua_topointer(L, 2);
-    NewtonBodySetMassMatrix( bodies[bodyindex], massmatrix );
+    dFloat mass = (dFloat)lua_tonumber(L, 2);
+    dFloat Ixx = (dFloat)lua_tonumber(L, 3);
+    dFloat Iyy = (dFloat)lua_tonumber(L, 4);
+    dFloat Izz = (dFloat)lua_tonumber(L, 5);
+    NewtonBodySetMassMatrix( bodies[bodyindex],  mass, Ixx, Iyy, Izz );
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int bodyGetCentreOfMass( lua_State *L )
 {
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }   
+    float center[3];
+    NewtonBodyGetCentreOfMass( bodies[bodyindex], center);
+
+    lua_pushnumber(L, center[0]);
+    lua_pushnumber(L, center[1]);
+    lua_pushnumber(L, center[2]);
+    return 3;
+}
+
+static void __applyForceAndTorqueCallback(const NewtonBody* body, dFloat timestep, int threadIndex) 
+{
+    int bodyindex = -1;
+    int idx = 0;
+    for (std::vector<NewtonBody *>::iterator i = bodies.begin(); i != bodies.end(); ++i, ++idx) {
+        if(*i == body) {
+            bodyindex = idx;
+            break;
+        }
+    }
+
+    if( bodyindex == -1 ) {
+        printf("error no body index found.");
+    }
+
+    auto result = bodyCallback.find((NewtonBody *)body);
+    int function_ref = result->second;
+    lua_rawgeti(cbL, LUA_REGISTRYINDEX, function_ref);
+
+    lua_pushnumber(cbL, bodyindex);
+    lua_pushnumber(cbL, timestep);
+    lua_pushnumber(cbL, threadIndex);
+    if (lua_pcall(cbL, 3, 0, 0) != 0 )
+    {
+        printf("error running function `f': %s", lua_tostring(cbL, -1));
+    }
 }
 
 static int bodySetForceAndTorqueCallback( lua_State *L )
 {
+    int bodyindex = lua_tonumber(L, 1);
+    if(bodyindex < 0 || bodyindex > bodies.size()-1) {
+        lua_pushnil(L);
+        return 1;
+    }   
+    int function_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    bodyCallback[(NewtonBody *)bodies[bodyindex]] = function_ref;
+    NewtonBodySetForceAndTorqueCallback( bodies[bodyindex], __applyForceAndTorqueCallback);
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int Create( lua_State *L )
 {
+    bodyUserData.clear();
+
     // Print the library version.
     printf("Hello, this is Newton version %d\n", NewtonWorldGetVersion());
     // Create the Newton world.
@@ -436,6 +550,10 @@ static int createMeshFromCollision( lua_State *L )
 static int Update( lua_State *L )
 {
     double timestep = luaL_checknumber(L, 1);
+
+    // Callbacks use this state to run in - not sure how good/bad/crazy this is
+    cbL = L;
+
     NewtonUpdate(world, (float)timestep);
 
     lua_newtable(L);
@@ -493,6 +611,7 @@ static const luaL_reg Module_methods[] =
     {"body_add", addBody },
     {"body_getmass", bodyGetMass },
     {"body_setmassproperties", bodySetMassProperties },
+    {"body_getuserdata", bodyGetUserData },
     {"body_setuserdata", bodySetUserData },
     {"body_setlineardamping", bodySetLinearDamping },
     {"body_setangulardamping", bodySetAngularDamping },
@@ -582,4 +701,4 @@ void OnEventNewtonExtension(dmExtension::Params* params, const dmExtension::Even
 
 // NewtonExtension is the C++ symbol that holds all relevant extension data.
 // It must match the name field in the `ext.manifest`
-DM_DECLARE_EXTENSION(NewtonExtension, LIB_NAME, AppInitializeNewtonExtension, AppFinalizeNewtonExtension, InitializeNewtonExtension, OnUpdateNewtonExtension, OnEventNewtonExtension, FinalizeNewtonExtension)
+DM_DECLARE_EXTENSION(Newton, LIB_NAME, AppInitializeNewtonExtension, AppFinalizeNewtonExtension, InitializeNewtonExtension, OnUpdateNewtonExtension, OnEventNewtonExtension, FinalizeNewtonExtension)

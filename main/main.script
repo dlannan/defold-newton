@@ -54,57 +54,58 @@ function init(self)
 		
 	loadground(self)
 
-	newtonextension.create()
-	self.collground = newtonextension.addcollisionplane(100, 100)
-	self.collsphere = newtonextension.addcollisionsphere(1)
+	newton.create()
+	self.collground = newton.collision_addplane(100, 100)
+	self.collsphere = newton.collision_addsphere(1)
 
-	self.collcube = newtonextension.addcollisioncube(1.5, 1.5, 1.5)
-	self.collcone = newtonextension.addcollisioncone(1, 2)
-	self.collcapsule = newtonextension.addcollisioncapsule(0.5, 0.5, 0.75)
-	self.collcylinder = newtonextension.addcollisioncylinder(0.7, 0.7, 2.0)
-	self.collchamfercylinder = newtonextension.addcollisionchamfercylinder(0.7, 0.2)
-	--self.collconvexhull = newtonextension.addcollisionconvexhull(24, vertcloud)
+	self.collcube = newton.collision_addcube(1.5, 1.5, 1.5)
+	self.collcone = newton.collision_addcone(1, 2)
+	self.collcapsule = newton.collision_addcapsule(0.5, 0.5, 0.75)
+	self.collcylinder = newton.collision_addcylinder(0.7, 0.7, 2.0)
+	self.collchamfercylinder = newton.collision_addchamfercylinder(0.7, 0.2)
+	--self.collconvexhull = newton.collision_addconvexhull(24, vertcloud)
 
 	self.bodies = {}
 	self.ground = { 
-		index = newtonextension.addbody(self.collplane, 0,0,0, 0),
+		index = newton.body_add(self.collplane, 0,0,0, 0),
 		coll = self.collplane,
 		name = "plane",
 	}  -- infinite mass is 0
 	self.bodies.sphere1 = 
 	{ 
-		index = newtonextension.addbody(self.collsphere, 00,10,0, 2),
+		index = newton.body_add(self.collsphere, 00,10,0, 2),
 		coll = self.collsphere ,
 		name = "sphere1",
 	}
+	
 	self.bodies.sphere2 = { 
-		index = newtonextension.addbody(self.collsphere, 0,20,0, 1),
+		index = newton.body_add(self.collsphere, 0,20,0, 1),
 		coll = self.collsphere ,
 		name = "sphere2",	
 	}
 
 	self.bodies.cube = { 
-		index = newtonextension.addbody(self.collcube, 0,19,0, 2),
+		index = newton.body_add(self.collcube, 0,19,0, 2),
 		coll = self.collcube,
 		name = "cube",
 	}
 	self.bodies.cone = { 
-		index = newtonextension.addbody(self.collcone, 0,18,0, 3) ,
+		index = newton.body_add(self.collcone, 0,18,0, 3) ,
 		coll = self.collcone,
 		name = "cone",
 	}
 	self.bodies.capsule = { 
-		index = newtonextension.addbody(self.collcapsule, 0,17,4, 1) ,
+		index = newton.body_add(self.collcapsule, 0,17,4, 1) ,
 		coll = self.collcapsule,
 		name = "capsule",
 	}
 	self.bodies.cylinder = { 
-		index = newtonextension.addbody(self.collcylinder, 0, 16,5, 1),
+		index = newton.body_add(self.collcylinder, 0, 16,5, 1),
 		coll = self.collcylinder,
 		name = "cylinder",
 	}
 	self.bodies.chamfercylinder = { 
-		index = newtonextension.addbody(self.collchamfercylinder, 0,15,6, 1) ,
+		index = newton.body_add(self.collchamfercylinder, 0,15,6, 1) ,
 		coll = self.collchamfercylinder,
 		name = "chamfercylinder",
 	}
@@ -118,7 +119,7 @@ function init(self)
 		if(k == "cube") then mapping = 3 end 
 		if(k == "sphere") then mapping = 1 end 
 		if(k == "cylinder" or k == "chamfercylinder" or k == "capsule" ) then mapping = 2 end 
-		local mid, indices, verts, uvs, normals = newtonextension.createmeshfromcollision( v.coll, mapping )
+		local mid, indices, verts, uvs, normals = newton.createmeshfromcollision( v.coll, mapping )
 		if(k == "cube") then 
 			pprint(verts)
 			pprint(indices)
@@ -157,7 +158,7 @@ function update(self, delta)
 	
 	-- Update returns all the current bodies position and rotation info. { { pos = { x,y,z }, rot = { x, y, z, w } }
 	-- This forces a minimum of 60Hz physics - this may be too quick.
-	local bodies = newtonextension.update(math.max(delta, diff))
+	local bodies = newton.update(math.max(delta, diff))
 	updateBodyObjects( self, bodies )
 	
 	camdrive.update(self, diff)
