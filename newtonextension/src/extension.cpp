@@ -14,9 +14,9 @@
 
 NewtonWorld* gWorld = NULL;
 
-std::vector<NewtonBody*  > gBodies;
-std::vector<NewtonCollision*> gColls;
-std::vector<NewtonMesh* > gMeshes;
+std::map<int, NewtonBody*  > gBodies;
+std::map<int, NewtonCollision*> gColls;
+std::map<int, NewtonMesh* > gMeshes;
 
 std::map<int, int>   bodyUserData;
 std::map<NewtonBody* , int>   bodyCallback;
@@ -55,10 +55,11 @@ int SetTableVector( lua_State *L, dFloat *data, const char *name );
 
 static int Create( lua_State *L )
 {
-    bodyUserData.clear();
+    // Cleanup if this is called again during a run.
+    Close(L);
 
     // Print the library version.
-    printf("Hello, this is Newton version %d\n", NewtonWorldGetVersion());
+    printf("[Newton] Version %d\n", NewtonWorldGetVersion());
     // Create the Newton world.
     gWorld = NewtonCreate();
     NewtonInvalidateCache(gWorld);
@@ -76,9 +77,9 @@ static int Update( lua_State *L )
 
     lua_newtable(L);
     
-    for(size_t i = 0; i<gBodies.size(); i++)
+    for ( const auto &bodyItem : gBodies )
     {        
-        NewtonBody *body = gBodies[i];
+        NewtonBody *body = bodyItem->second;
 
         // After update, build the table and set all the pos and quats.
         dFloat rot[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -87,7 +88,7 @@ static int Update( lua_State *L )
         dFloat pos[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         NewtonBodyGetPosition(body, pos);
 
-        lua_pushnumber(L, i+1); 
+        lua_pushnumber(L, bodyItem->first+1); 
         lua_newtable(L);
         
         SetTableVector(L, pos, "pos");
@@ -101,10 +102,18 @@ static int Update( lua_State *L )
 static int Close( lua_State *L )
 {
     // Clean up.
-    for(size_t i=0; i<gColls.size(); i++)
-        NewtonDestroyCollision(gColls[i]);
+    for ( const auto &meshItem : gMeshes )
+        NewtonMeshDestroy(meshItem->second);
+    for ( const auto &collItem : gColls )
+        NewtonDestroyCollision(collItem->second);
+    for ( const auto &bodyItem : gBodies )
+        NewtonDestroyBody(bodyItem->second);
+
     gColls.clear();
-    NewtonDestroy(gWorld);
+    gBodies.clear();
+    gMeshes.clear();
+
+    if(gWorld) NewtonDestroy(gWorld);
     return 0;
 }
 

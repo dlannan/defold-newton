@@ -406,6 +406,7 @@ int VehicleRemove( lua_State *L ) {
     if(index > 0 && index < gVehicles.size()) {
         dNewtonCollisionCompound shape = gVehicles[index];
 
+        NewtonDestroyCollision(gVehicles[collindex]);    
         lua_pushnumber(L, 1);
     } else {
         printf("[Newton] Vehicle index %d not found.\n", index);
