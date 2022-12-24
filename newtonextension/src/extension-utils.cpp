@@ -1,6 +1,7 @@
-
+Bodies
 // include the Defold SDK
 #include <dmsdk/sdk.h>
+#include <dmsdk/dlib/time.h>
 #include <stdlib.h>
 #include <Newton.h>
 #include <vector>
@@ -10,17 +11,21 @@
 
 extern NewtonWorld* gWorld;
 
-extern std::vector<NewtonBody*  > gBodies;
-extern std::vector<NewtonCollision*> gColls;
-extern std::vector<NewtonMesh* >gMeshes;
+extern std::map<uint64_t, NewtonBody*  > gBodies;
+extern std::map<uint64_t, NewtonCollision*> gColls;
+extern std::map<uint64_t, NewtonMesh* >gMeshes;
 
 
-extern std::map<int, int>   bodyUserData;
+extern std::map<uint64_t, int>   bodyUserData;
 extern std::map<NewtonBody* , int>   bodyCallback;
 
 extern lua_State *gCbL;
 
- int SetTableVector( lua_State *L, dFloat *data, const char *name )
+uint64_t GetId() {
+    return dmTime::GetTime();
+}
+
+int SetTableVector( lua_State *L, dFloat *data, const char *name )
 {
     lua_pushstring(L, name); 
     lua_newtable(L);

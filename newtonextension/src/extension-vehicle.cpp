@@ -10,19 +10,21 @@
 
 extern NewtonWorld* gWorld;
 
-extern std::vector<NewtonBody*  > gBodies;
-extern std::vector<NewtonCollision*> gColls;
-extern std::vector<NewtonMesh* >gMeshes;
+extern std::map<uint64_t, NewtonBody*  > gBodies;
+extern std::map<uint64_t, NewtonCollision*> gColls;
+extern std::map<uint64_t, NewtonMesh* >gMeshes;
 
 
-extern std::map<int, int>   bodyUserData;
-extern std::map<NewtonBody* , int>   bodyCallback;
+extern std::map<uint64_t, int>   bodyUserData;
+extern std::map<NewtonBody* , uint64_t>   bodyCallback;
 
 extern lua_State *gCbL;
 
+extern uint64_t GetId();
+
 static MyVehicleManager* gManager = NULL;
 
-std::vector<dNewtonCollisionCompound> gVehicles;
+std::map<uint64_t, dNewtonCollisionCompound> gVehicles;
 
 struct BasciCarParameters
 {
@@ -99,7 +101,6 @@ static BasciCarParameters basicCarParameters =
 	dGetIdentityMatrix(),
 };
 
-
 static float VehicleHullShape0[][3] =  
 {
 	{-2.3f, 0.0f, -0.9f}, {-2.3f, 0.0f, 0.9f}, {2.3f, 0.0f, -0.9f}, {2.3f, 0.0f, 0.9f},
@@ -111,7 +112,6 @@ static float VehicleHullShape1[][3] =
 	{-1.5f, 0.0f, -0.9f}, {-1.5f, 0.0f, 0.9f}, {1.2f, 0.0f, -0.9f}, {1.2f, 0.0f, 0.9f},
 	{-1.1f, 0.7f, -0.9f}, {-1.1f, 0.7f, 0.9f}, {0.8f, 0.7f, -0.9f}, {0.8f, 0.7f, 0.9f},
 };
-
 
 //-----------------------------------------------------------------------------
 using namespace std;
@@ -145,8 +145,6 @@ class MyDynamicBody: public dNewtonDynamicBody
    }
 };
 
-
-
 //-----------------------------------------------------------------------------
 class MyVehicle : public dNewtonVehicleManager::dNewtonVehicle
 
@@ -160,7 +158,6 @@ class MyVehicle : public dNewtonVehicleManager::dNewtonVehicle
     ~MyVehicle()
     {
     }
-
 
 	NewtonCollision* const chassisCollision = CreateChassisCollision (world);
 
@@ -203,8 +200,6 @@ class MyVehicle : public dNewtonVehicleManager::dNewtonVehicle
 	}
 	m_gearMap[0] = 1;
 	m_gearMap[1] = 0;
-
-
 
 	void BuidlBasicCar (const BasciCarParameters& parameters)
 	{
@@ -335,9 +330,6 @@ class MyVehicle : public dNewtonVehicleManager::dNewtonVehicle
 		return collision;
 	}
 
-
-    
-
     void OnPlayerMove (dFloat timestep)
     {
         dVector gravity(0.0f, -9.81f, 0.0f);
@@ -383,30 +375,30 @@ class MyVehicleManager: public dNewtonVehicleManager
 void VehiclesInit() {
     // create a vehicle manager
     gManager = new MyVehicleManager(gWorld);
-    gVehicles = new std::vector<dNewtonCollisionCompound>();
+	gVehicles.clear();
 }
 
 void VehiclesShutdown() {
-
-    delete gVehicles;
+	gVehicle.clear();
     delete gManager;
 }
 
 int VehicleAdd( lua_State *L ) {
 
     dNewtonCollisionCompound shape  = gManager->MakeChassisShape (1);
-    gVehicles.push_back(shape);
-    lua_pushnumber(L, gVehicles.size() - 1);
+	int index = GetId();
+    gVehicles[index] = shape;
+    lua_pushnumber(L, index);
     return 1;
 }
 
 int VehicleRemove( lua_State *L ) {
 
     int index = lua_tonumber(L, 1);
-    if(index > 0 && index < gVehicles.size()) {
-        dNewtonCollisionCompound shape = gVehicles[index];
-
-        NewtonDestroyCollision(gVehicles[collindex]);    
+	std::map<uint64_t, dNewtonCollisionCompound> it = gVehicles.find(index);
+    if(it != gVehicles.end())
+	{
+        NewtonDestroyCollision(it->first);    
         lua_pushnumber(L, 1);
     } else {
         printf("[Newton] Vehicle index %d not found.\n", index);

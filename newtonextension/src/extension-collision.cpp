@@ -10,12 +10,12 @@
 
 extern NewtonWorld* gWorld;
 
-extern std::vector<NewtonBody*  > gBodies;
-extern std::vector<NewtonCollision*> gColls;
-extern std::vector<NewtonMesh* >gMeshes;
+extern std::map<uint64_t, NewtonBody*  > gBodies;
+extern std::map<uint64_t, NewtonCollision*> gColls;
+extern std::map<uint64_t, NewtonMesh* >gMeshes;
 
 
-extern std::map<int, int>   bodyUserData;
+extern std::map<uint64_t, int>   bodyUserData;
 extern std::map<NewtonBody* , int>   bodyCallback;
 
 extern lua_State *gCbL;
@@ -32,19 +32,22 @@ enum ShapeType {
     Shape_ConvexHull      
 }; 
 
+extern uint64_t GetId();
+
 extern int SetTableVector( lua_State *L, dFloat *data, const char *name );
 extern void AddTableVertices( lua_State *L, int count, const double *vertices );
 extern void AddTableIndices( lua_State *L, int count, int *indices );
 extern void AddTableUVs( lua_State *L, int count, const dFloat *uvs );
 extern void AddTableNormals( lua_State *L, int count, const dFloat *normals );
 
- int addCollisionSphere( lua_State * L ) {
+int addCollisionSphere( lua_State * L ) {
 
     double radii = lua_tonumber(L, 1);
     // Collision shapes: sphere (our ball), and large box (our ground plane).
     NewtonCollision* cs_object = NewtonCreateSphere(gWorld, radii, Shape_Sphere, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size()-1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
@@ -54,73 +57,80 @@ extern void AddTableNormals( lua_State *L, int count, const dFloat *normals );
     double depth = lua_tonumber(L, 2);
     // Collision shapes: sphere (our ball), and large box (our ground plane).
     NewtonCollision* cs_object = NewtonCreateBox(gWorld, width, 0.1, depth, Shape_Plane, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L,index);
     return 1;
 }
 
- int addCollisionCube( lua_State * L ) {
+int addCollisionCube( lua_State * L ) {
 
     double sx = lua_tonumber(L, 1);
     double sy = lua_tonumber(L, 2);
     double sz = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateBox(gWorld, sx, sy, sz, Shape_Cube, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
- int addCollisionCone( lua_State * L ) {
+int addCollisionCone( lua_State * L ) {
 
     double radius = lua_tonumber(L, 1);
     double height = lua_tonumber(L, 2);
     NewtonCollision* cs_object = NewtonCreateCone(gWorld, radius, height, Shape_Cone, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
- int addCollisionCapsule( lua_State * L ) {
+int addCollisionCapsule( lua_State * L ) {
 
     double r0 = lua_tonumber(L, 1);
     double r1 = lua_tonumber(L, 2);
     double height = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateCapsule(gWorld, r0, r1, height, Shape_Capsule, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
- int addCollisionCylinder( lua_State * L ) {
+int addCollisionCylinder( lua_State * L ) {
 
     double r0 = lua_tonumber(L, 1);
     double r1 = lua_tonumber(L, 2);
     double height = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateCylinder(gWorld, r0, r1, height, Shape_Cylinder, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
- int addCollisionChamferCylinder( lua_State * L ) {
+int addCollisionChamferCylinder( lua_State * L ) {
 
     double radius = lua_tonumber(L, 1);
     double height = lua_tonumber(L, 2);
     NewtonCollision* cs_object = NewtonCreateChamferCylinder(gWorld, radius, height,Shape_ChamferCylinder, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
- int addCollisionConvexHull( lua_State * L ) {
+int addCollisionConvexHull( lua_State * L ) {
 
     double count = lua_tonumber(L, 1);
     int stride = lua_tonumber(L, 2);
     double tolerance = lua_tonumber(L, 3);
     const float *vertCloud = (float *)lua_topointer(L, 4);
     NewtonCollision* cs_object = NewtonCreateConvexHull(gWorld, count, vertCloud, stride, tolerance, Shape_ConvexHull, NULL);
-    gColls.push_back( cs_object );
-    lua_pushnumber(L, gColls.size() - 1);
+    uint64_t index = GetId();
+    gColls[index] = cs_object;
+    lua_pushnumber(L, index);
     return 1;
 }
 
@@ -136,24 +146,25 @@ extern void AddTableNormals( lua_State *L, int count, const dFloat *normals );
     return 0;
 }
 
- int destroyCollision(lua_State *L)
+int destroyCollision(lua_State *L)
 {
     int collindex = lua_tonumber(L, 1);
-    if(collindex < 0 || collindex > gColls.size()-1) {
+	std::map<uint64_t, NewtonCollision*> it = gColl.find(collindex);
+    if(it != gColl.end()) {
         lua_pushnil(L);
         return 1;
     }
-    NewtonDestroyCollision(gColls[collindex]);
-    gColls.erase(gColls.begin() + collindex);
+    NewtonDestroyCollision(it->second);
+    gColls.erase(it);
     lua_pushnumber(L, 1);
     return 1;
 }
 
-
- int createMeshFromCollision( lua_State *L )
+int createMeshFromCollision( lua_State *L )
 {
     int collindex = lua_tonumber(L, 1);
-    if(collindex < 0 || collindex > gColls.size()-1) {
+	std::map<uint64_t, NewtonCollision*> it = gColl.find(collindex);
+    if(it != gColl.end()) {
         lua_pushnil(L);
         return 1;
     }
@@ -163,8 +174,9 @@ extern void AddTableNormals( lua_State *L, int count, const dFloat *normals );
 
     NewtonMesh *mesh = NewtonMeshCreateFromCollision( collision );
     if(mesh) {
-        gMeshes.push_back(mesh);
-        lua_pushnumber(L, gMeshes.size() - 1);
+        uint64_t index = GetId();
+        gMeshes[index] = mesh;
+        lua_pushnumber(L, index);
 
         NewtonMeshTriangulate(mesh);
         NewtonMeshCalculateVertexNormals(mesh, 0.3f);

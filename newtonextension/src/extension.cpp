@@ -14,14 +14,16 @@
 
 NewtonWorld* gWorld = NULL;
 
-std::map<int, NewtonBody*  > gBodies;
-std::map<int, NewtonCollision*> gColls;
-std::map<int, NewtonMesh* > gMeshes;
+std::map<uint64_t, NewtonBody*  > gBodies;
+std::map<uint64_t, NewtonCollision*> gColls;
+std::map<uint64_t, NewtonMesh* > gMeshes;
 
-std::map<int, int>   bodyUserData;
+std::map<uint64_t, int>   bodyUserData;
 std::map<NewtonBody* , int>   bodyCallback;
 
 lua_State *gCbL = NULL;
+
+extern uint64_t GetId();
 
 // External collision 
 extern int addCollisionSphere( lua_State * L );
@@ -88,7 +90,7 @@ static int Update( lua_State *L )
         dFloat pos[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         NewtonBodyGetPosition(body, pos);
 
-        lua_pushnumber(L, bodyItem->first+1); 
+        lua_pushnumber(L, bodyItem->first); 
         lua_newtable(L);
         
         SetTableVector(L, pos, "pos");
@@ -184,11 +186,13 @@ dmExtension::Result AppFinalizeNewtonExtension(dmExtension::AppParams* params)
 dmExtension::Result FinalizeNewtonExtension(dmExtension::Params* params)
 {
     dmLogInfo("FinalizeNewtonExtension\n");
-    for(size_t i=0; i<gMeshes.size(); i++)
-        NewtonMeshDestroy(gMeshes[i]);
+     std::map<uint64_t, NewtonMesh* > it = gMeshes.begin();
+    for(; it != gMeshes.end(); ++it)
+        NewtonMeshDestroy(it->second);
     gMeshes.clear();
-    for(size_t i=0; i<gColls.size(); i++)
-        NewtonDestroyCollision(gColls[i]);
+	std::map<uint64_t, MeshCollision *> collit = gColl.begin();
+    for(;collit != gColl.end(); ++collit)
+        NewtonDestroyCollision(collit->second);
     gColls.clear();
     NewtonDestroy(gWorld);    
     return dmExtension::RESULT_OK;
