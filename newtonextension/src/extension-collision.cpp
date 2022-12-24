@@ -149,8 +149,8 @@ int addCollisionConvexHull( lua_State * L ) {
 int destroyCollision(lua_State *L)
 {
     int collindex = lua_tonumber(L, 1);
-	std::map<uint64_t, NewtonCollision*> it = gColl.find(collindex);
-    if(it != gColl.end()) {
+	std::map<uint64_t, NewtonCollision*>::iterator it = gColls.find(collindex);
+    if(it != gColls.end()) {
         lua_pushnil(L);
         return 1;
     }
@@ -163,8 +163,8 @@ int destroyCollision(lua_State *L)
 int createMeshFromCollision( lua_State *L )
 {
     int collindex = lua_tonumber(L, 1);
-	std::map<uint64_t, NewtonCollision*> it = gColl.find(collindex);
-    if(it != gColl.end()) {
+	std::map<uint64_t, NewtonCollision*>::iterator it = gColls.find(collindex);
+    if(it != gColls.end()) {
         lua_pushnil(L);
         return 1;
     }

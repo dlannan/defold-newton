@@ -25,15 +25,8 @@
 // to make a profile build use Use CMAKE to create a profile configuration
 // or make a configuration that define macro D_PROFILER
 
-#ifdef D_PROFILER
-	#include <dProfiler.h>
-	#define D_TRACKTIME() dProfilerZoneScoped(__FUNCTION__)
-	#define D_SET_TRACK_NAME(trackName) dProfilerSetTrackName(trackName)
-	#define DG_TRACKTIME() D_TRACKTIME()
-#else
-	#define D_TRACKTIME() 
-	#define D_SET_TRACK_NAME(trackName)
-	#define DG_TRACKTIME()
-#endif
+#define D_TRACKTIME() 
+#define D_SET_TRACK_NAME(trackName)
+#define DG_TRACKTIME()
 
 #endif

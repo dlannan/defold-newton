@@ -15,6 +15,7 @@ platforms:
 
     x86_64-linux:
         context:
+            defines: [ "_POSIX_VER_64", "DG_SCALAR_VECTOR_CLASS" ]
             excludeLibs: ["physics","LinearMath","BulletDynamics","BulletCollision","Box2D"]
             excludeSymbols: []
             symbols: []

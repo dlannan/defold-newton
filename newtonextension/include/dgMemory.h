@@ -144,7 +144,7 @@ class dgStackMemoryAllocator: public dgMemoryAllocator
 
 	DG_INLINE void* Alloc(dgInt32 size)
 	{
-		dgInt8* const ptr = (dgInt8*) (reinterpret_cast<intptr_t>(m_pool + m_index + 15) & -0x10);
+		dgInt8* const ptr = (dgInt8*) (reinterpret_cast<uintptr_t>(m_pool + m_index + 15) & -0x10);
 		m_index = dgInt32 (ptr - m_pool) + size;
 		dgAssert (m_index < m_size);
 		return ptr;

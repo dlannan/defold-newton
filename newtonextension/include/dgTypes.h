@@ -22,9 +22,21 @@
 #ifndef __DGTYPES_H__
 #define __DGTYPES_H__
 
-#ifdef DM_PLATFORM_WINDOWS
-	#ifndef _WIN_64_VER
-		#define _WIN_64_VER
+#ifdef _MSC_VER 
+    #if defined (_M_ARM) || defined (_M_ARM64)
+		#ifndef _ARM_VER
+			#define _ARM_VER
+		#endif
+	#elif defined (_M_X64)
+		#ifndef _WIN_64_VER
+			#define _WIN_64_VER
+		#endif
+	#elif defined (_M_IX86)
+		#ifndef _WIN_32_VER
+			#define _WIN_32_VER
+		#endif
+	#else 
+		#error target platform not defined
 	#endif
 
 	#if _MSC_VER >= 1400
@@ -32,7 +44,7 @@
 	#endif
 #endif
 
-#if (defined (_WIN_64_VER) )
+#if (defined (_WIN_32_VER) || defined (_WIN_64_VER) || (defined (_MSC_VER ) && defined (_ARM_VER)) )
 	#pragma warning (disable: 4100) //unreferenced formal parameter
 	#pragma warning (disable: 4201) //nonstandard extension used : nameless struct/union
 	#pragma warning (disable: 4324) //structure was padded due to __declspec(align())
@@ -75,13 +87,22 @@
 #include <float.h>
 #include <ctype.h>
 
-#if ( defined (_WIN_64_VER))
+#if (defined (__MINGW32__) || defined (__MINGW64__))
+	#include <io.h> 
+	#include <direct.h> 
+	#include <malloc.h>
+	#include <float.h>
+	#include <windows.h>
+	#include <process.h>
+#endif
+
+#if (defined (_WIN_32_VER) || defined (_WIN_64_VER))
 	#include <intrin.h>
 	#include <emmintrin.h> 
 	#include <pmmintrin.h>
 #endif
 
-#if (defined (DM_PLATFORM_LINUX) )
+#if (defined (_POSIX_VER) || defined (_POSIX_VER_64) || defined (__MINGW32__) || defined (__MINGW64__))
   /* CMake defines NDEBUG for _not_ debug builds. Therefore, set
      Newton's _DEBUG flag only when NDEBUG is not defined.
   */
@@ -102,7 +123,7 @@
 	#endif
 #endif
 
-#ifdef DM_PLATFORM_OSX
+#ifdef _MACOSX_VER
 	#include <unistd.h>
 	#include <sys/sysctl.h>
     #include <assert.h> 
@@ -120,13 +141,11 @@
 
 // uncomment this for Scalar floating point 
 // alternatively the end application can use a command line option to enable this define
-#define DG_SCALAR_VECTOR_CLASS
+//#define DG_SCALAR_VECTOR_CLASS
 
 // uncomment this for Scalar floating point 
 // alternatively the end application can use a command line option to enable this define
-#if ( defined ( DM_PLATFORM_ANDROID ) )
-	#define __ANDROID__
-#endif
+//#define __ANDROID__
 
 // by default newton run on a separate thread and 
 // optionally concurrent with the calling thread,
@@ -134,9 +153,9 @@
 // define DG_USE_THREAD_EMULATION on the command line for 
 // platform that do not support hardware multi threading or 
 // if the and application want to control threading at the application level 
-#define DG_USE_THREAD_EMULATION
+//#define DG_USE_THREAD_EMULATION
 
-#if ( defined (_WIN_64_VER))
+#if (defined (_WIN_32_VER) || defined (_WIN_64_VER))
 	#if _MSC_VER < 1700
 		#ifndef DG_USE_THREAD_EMULATION
 			#define DG_USE_THREAD_EMULATION
@@ -155,7 +174,9 @@
 #ifdef DG_DISABLE_ASSERT
 	#define dgAssert(x)
 #else 
-	#if defined (_WIN_64_VER) 
+	#if defined (_WIN_32_VER) || defined (_WIN_64_VER) 
+		#define dgAssert(x) _ASSERTE(x)
+	#elif defined (_MSC_VER ) && defined (_ARM_VER) 
 		#define dgAssert(x) _ASSERTE(x)
 	#else
 		#ifdef _DEBUG
@@ -210,8 +231,8 @@
 #endif
 
 #if defined(_MSC_VER)
-	#define DG_LIBRARY_EXPORT 
-	#define DG_LIBRARY_IMPORT 
+	#define DG_LIBRARY_EXPORT __declspec(dllexport)
+	#define DG_LIBRARY_IMPORT __declspec(dllimport)
 	#define DG_LIBRARY_STATIC
 #else
 	#define DG_LIBRARY_EXPORT __attribute__((visibility("default")))
@@ -507,11 +528,13 @@ class dgSetPrecisionDouble
 
 DG_INLINE dgInt32 dgAtomicExchangeAndAdd (dgInt32* const addend, dgInt32 amount)
 {
-	#if ( defined (_WIN_64_VER))
+	#if (defined (_WIN_32_VER) || defined (_WIN_64_VER))
 		return _InterlockedExchangeAdd((long*)addend, long(amount));
 	#elif defined (_MSC_VER ) && defined (_ARM_VER) 
 		return _InterlockedExchangeAdd((long*)addend, long(amount));
-	#elif (defined (DM_PLATFORM_LINUX) ||defined (DM_PLATFORM_OSX)|| defined DM_PLATFORM_ANDROID)
+	#elif (defined (__MINGW32__) || defined (__MINGW64__))
+		return InterlockedExchangeAdd((long*)addend, long(amount));
+	#elif (defined (_POSIX_VER) || defined (_POSIX_VER_64) ||defined (_MACOSX_VER)|| defined ANDROID)
 		return __sync_fetch_and_add((int32_t*)addend, amount);
 	#else
 		#error "dgAtomicExchangeAndAdd implementation required"
@@ -520,11 +543,13 @@ DG_INLINE dgInt32 dgAtomicExchangeAndAdd (dgInt32* const addend, dgInt32 amount)
 
 DG_INLINE dgInt32 dgInterlockedExchange(dgInt32* const ptr, dgInt32 value)
 {
-	#if ( defined (_WIN_64_VER))
+	#if (defined (_WIN_32_VER) || defined (_WIN_64_VER))
 		return _InterlockedExchange((long*) ptr, value);
 	#elif defined (_MSC_VER ) && defined (_ARM_VER) 
 		return _InterlockedExchange((long*)ptr, value);
-	#elif (defined (DM_PLATFORM_LINUX) ||defined (DM_PLATFORM_OSX)|| defined DM_PLATFORM_ANDROID)
+	#elif (defined (__MINGW32__) || defined (__MINGW64__))
+		return InterlockedExchange((long*) ptr, value);
+	#elif (defined (_POSIX_VER) || defined (_POSIX_VER_64) ||defined (_MACOSX_VER))
 		return __sync_lock_test_and_set((int32_t*)ptr, value);
 	#else
 		#error "dgInterlockedExchange implementation required"
@@ -558,11 +583,13 @@ DG_INLINE void* dgInterlockedExchange(void** const ptr, void* value)
 
 DG_INLINE dgInt32 dgInterlockedTest(dgInt32* const ptr, dgInt32 value)
 {
-	#if ( defined (_WIN_64_VER))
+	#if (defined (_WIN_32_VER) || defined (_WIN_64_VER))
 		return _InterlockedCompareExchange((long*)ptr, value, value);
 	#elif defined (_MSC_VER ) && defined (_ARM_VER) 
 		return _InterlockedCompareExchange((long*)ptr, value, value);
-	#elif (defined (DM_PLATFORM_LINUX) ||defined (DM_PLATFORM_OSX)|| defined DM_PLATFORM_ANDROID)
+	#elif (defined (__MINGW32__) || defined (__MINGW64__))
+		return InterlockedCompareExchange((long*)ptr, value, value);
+	#elif (defined (_POSIX_VER) || defined (_POSIX_VER_64) ||defined (_MACOSX_VER))
 		return __sync_lock_test_and_set((int32_t*)ptr, value);
 	#else
 		#error "dgInterlockedTest implementation required"

@@ -1,4 +1,4 @@
-Bodies
+
 // include the Defold SDK
 #include <dmsdk/sdk.h>
 #include <dmsdk/dlib/time.h>

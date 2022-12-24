@@ -6,7 +6,11 @@
 #include <vector>
 #include <map>
 
+#include <dVector.h>
 #include <dMatrix.h>
+#include <dNewton.h>
+#include <dNewtonCollision.h>
+#include <dNewtonDynamicBody.h>
 
 extern NewtonWorld* gWorld;
 
@@ -21,10 +25,6 @@ extern std::map<NewtonBody* , uint64_t>   bodyCallback;
 extern lua_State *gCbL;
 
 extern uint64_t GetId();
-
-static MyVehicleManager* gManager = NULL;
-
-std::map<uint64_t, dNewtonCollisionCompound> gVehicles;
 
 struct BasciCarParameters
 {
@@ -371,6 +371,10 @@ class MyVehicleManager: public dNewtonVehicleManager
 		return shape;
 	}
 };
+
+static MyVehicleManager* gManager = NULL;
+
+std::map<uint64_t, dNewtonCollisionCompound> gVehicles;
 
 void VehiclesInit() {
     // create a vehicle manager
