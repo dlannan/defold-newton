@@ -1,28 +1,10 @@
 
-// include the Defold SDK
-#include <dmsdk/sdk.h>
-#include <dmsdk/dlib/time.h>
-#include <stdlib.h>
-#include <Newton.h>
-#include <vector>
-#include <map>
+#include "extension.h"
 
-#include <dMatrix.h>
+static uint32_t idctr = 1;
 
-extern NewtonWorld* gWorld;
-
-extern std::map<uint64_t, NewtonBody*  > gBodies;
-extern std::map<uint64_t, NewtonCollision*> gColls;
-extern std::map<uint64_t, NewtonMesh* >gMeshes;
-
-
-extern std::map<uint64_t, int>   bodyUserData;
-extern std::map<NewtonBody* , int>   bodyCallback;
-
-extern lua_State *gCbL;
-
-uint64_t GetId() {
-    return dmTime::GetTime();
+uint32_t GetId() {
+    return idctr++; //(uint32_t)(dmTime::GetTime() & 0xffffffff);
 }
 
 int SetTableVector( lua_State *L, dFloat *data, const char *name )
@@ -48,7 +30,7 @@ int SetTableVector( lua_State *L, dFloat *data, const char *name )
     return 0;
 }
 
- void AddTableIndices( lua_State *L, int count, int *indices )
+void AddTableIndices( lua_State *L, int count, int *indices )
 {
     lua_newtable(L);
     int * idxptr = (int *)indices;
@@ -59,7 +41,7 @@ int SetTableVector( lua_State *L, dFloat *data, const char *name )
     }
 }
 
- void AddTableVertices( lua_State *L, int count, const double *vertices )
+void AddTableVertices( lua_State *L, int count, const double *vertices )
 {
     lua_newtable(L);
     double * vertptr = (double *)vertices;
@@ -80,7 +62,7 @@ int SetTableVector( lua_State *L, dFloat *data, const char *name )
 }
 
 
- void AddTableUVs( lua_State *L, int count, const dFloat *uvs )
+void AddTableUVs( lua_State *L, int count, const dFloat *uvs )
 {
     lua_newtable(L);
     dFloat * uvsptr = (dFloat *)uvs;
@@ -91,7 +73,7 @@ int SetTableVector( lua_State *L, dFloat *data, const char *name )
     }
 }
 
- void AddTableNormals( lua_State *L, int count, const dFloat *normals )
+void AddTableNormals( lua_State *L, int count, const dFloat *normals )
 {
     lua_newtable(L);
     dFloat * normptr = (dFloat *)normals;

@@ -12,53 +12,31 @@
 
 #include <dMatrix.h>
 
+#include "extension-collision.h"
+#include "extension-body.h"
+
 NewtonWorld* gWorld = NULL;
 
-std::map<uint64_t, NewtonBody*  > gBodies;
-std::map<uint64_t, NewtonCollision*> gColls;
-std::map<uint64_t, NewtonMesh* > gMeshes;
+std::map<uint32_t, NewtonBody*  > gBodies;
+std::map<uint32_t, NewtonCollision*> gColls;
+std::map<uint32_t, NewtonMesh* > gMeshes;
 
-std::map<uint64_t, int>   bodyUserData;
+std::map<uint32_t, int>   bodyUserData;
 std::map<NewtonBody* , int>   bodyCallback;
 
 lua_State *gCbL = NULL;
 
-extern uint64_t GetId();
-
-// External collision 
-extern int addCollisionSphere( lua_State * L );
-extern int addCollisionPlane( lua_State * L ); 
-extern int addCollisionCube( lua_State * L );
-extern int addCollisionCone( lua_State * L );
-extern int addCollisionCapsule( lua_State * L );
-extern int addCollisionCylinder( lua_State * L );
-extern int addCollisionChamferCylinder( lua_State * L );
-extern int addCollisionConvexHull( lua_State * L );
-extern int destroyCollision(lua_State *L);
-
-extern int createMeshFromCollision( lua_State *L );
-
-extern int worldRayCast( lua_State *L );
-
-// External Body
-extern int addBody( lua_State *L );
-extern int bodyGetMass( lua_State *L );
-extern int bodySetMassProperties( lua_State *L );
-extern int bodyGetUserData( lua_State *L );
-extern int bodySetUserData( lua_State *L );
-extern int bodySetLinearDamping( lua_State *L );
-extern int bodySetAngularDamping( lua_State *L );
-extern int bodySetMassMatrix( lua_State *L );
-extern int bodyGetCentreOfMass( lua_State *L );
-extern int bodySetForceAndTorqueCallback( lua_State *L );
-
 // utils
 int SetTableVector( lua_State *L, dFloat *data, const char *name );
+void CollisionShutdown();
+void BodyShutdown();
+
+static void Close();
 
 static int Create( lua_State *L )
 {
     // Cleanup if this is called again during a run.
-    Close(L);
+    Close();
 
     // Print the library version.
     printf("[Newton] Version %d\n", NewtonWorldGetVersion());
@@ -75,13 +53,14 @@ static int Update( lua_State *L )
     // Callbacks use this state to run in - not sure how good/bad/crazy this is
     gCbL = L;
 
-    NewtonUpdate(gWorld, (float)timestep);
+    if(gWorld) NewtonUpdate(gWorld, (float)timestep);
 
     lua_newtable(L);
     
-    for ( const auto &bodyItem : gBodies )
-    {        
-        NewtonBody *body = bodyItem->second;
+    std::map<uint32_t, NewtonBody*>::iterator bodyit = gBodies.begin();
+    for ( ; bodyit != gBodies.end(); ++bodyit ) 
+    {       
+        NewtonBody *body = bodyit->second;
 
         // After update, build the table and set all the pos and quats.
         dFloat rot[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -90,7 +69,7 @@ static int Update( lua_State *L )
         dFloat pos[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         NewtonBodyGetPosition(body, pos);
 
-        lua_pushnumber(L, bodyItem->first); 
+        lua_pushnumber(L, bodyit->first); 
         lua_newtable(L);
         
         SetTableVector(L, pos, "pos");
@@ -101,22 +80,25 @@ static int Update( lua_State *L )
     return 1;
 }
 
-static int Close( lua_State *L )
+void Close( void )
 {
     // Clean up.
-    for ( const auto &meshItem : gMeshes )
-        NewtonMeshDestroy(meshItem->second);
-    for ( const auto &collItem : gColls )
-        NewtonDestroyCollision(collItem->second);
-    for ( const auto &bodyItem : gBodies )
-        NewtonDestroyBody(bodyItem->second);
+    std::map<uint32_t, NewtonMesh*>::iterator meshit = gMeshes.begin();
+    for ( ; meshit != gMeshes.end(); ++meshit )
+        NewtonMeshDestroy(meshit->second);
+    std::map<uint32_t, NewtonCollision*>::iterator collit = gColls.begin();
+    for ( ; collit != gColls.end(); ++collit )
+        NewtonDestroyCollision(collit->second);
+    // std::map<uint32_t, NewtonBody*>::iterator bodyit = gBodies.begin();
+    // for ( ; bodyit != gBodies.end(); ++bodyit )        
+    //     NewtonDestroyBody(bodyit->second);
 
     gColls.clear();
     gBodies.clear();
     gMeshes.clear();
 
     if(gWorld) NewtonDestroy(gWorld);
-    return 0;
+    gWorld = NULL;
 }
 
 
@@ -125,7 +107,6 @@ static const luaL_reg Module_methods[] =
 {
     {"create", Create}, 
     {"update", Update}, 
-    {"close", Close},
     
     {"collision_addplane", addCollisionPlane },
     {"collision_addcube", addCollisionCube },
@@ -186,15 +167,7 @@ dmExtension::Result AppFinalizeNewtonExtension(dmExtension::AppParams* params)
 dmExtension::Result FinalizeNewtonExtension(dmExtension::Params* params)
 {
     dmLogInfo("FinalizeNewtonExtension\n");
-     std::map<uint64_t, NewtonMesh* > it = gMeshes.begin();
-    for(; it != gMeshes.end(); ++it)
-        NewtonMeshDestroy(it->second);
-    gMeshes.clear();
-	std::map<uint64_t, MeshCollision *> collit = gColl.begin();
-    for(;collit != gColl.end(); ++collit)
-        NewtonDestroyCollision(collit->second);
-    gColls.clear();
-    NewtonDestroy(gWorld);    
+    Close();
     return dmExtension::RESULT_OK;
 }
 

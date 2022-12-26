@@ -17,12 +17,12 @@ local pdatasize		= groundsize
 
 function loadground(self) 
 
-	self.ground = mpool.gettemp( "ground" )
-	geom:GeneratePlane( self.ground.."#temp", groundsize, groundsize, groundsize )
-	imageutils.loadimage( self.ground.."#temp", "/assets/images/brown.png", 0 )
+	self.groundMesh = mpool.gettemp( "ground" )
+	geom:GeneratePlane( self.groundMesh.."#temp", groundsize, groundsize, groundsize )
+	imageutils.loadimage( self.groundMesh.."#temp", "/assets/images/brown.png", 0 )
 		
 	local pos = vmath.vector3(0, 0, 0)
-	go.set_position(pos, self.ground)
+	go.set_position(pos, self.groundMesh)
 end
 
 -- --------------------------------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ end
 function updateBodyObjects( self, bodies )
 
 	for k,v in pairs(self.bodies) do
-		local body = bodies[v.index + 1]
+		local body = bodies[v.index]
 		if body then 
 			go.set_rotation( vmath.quat(body.rot.x,body.rot.y,body.rot.z,body.rot.w), v.geom)
 			go.set_position( vmath.vector3(body.pos.x,body.pos.y,body.pos.z), v.geom)
@@ -57,7 +57,6 @@ function init(self)
 	newton.create()
 	self.collground = newton.collision_addplane(100, 100)
 	self.collsphere = newton.collision_addsphere(1)
-
 	self.collcube = newton.collision_addcube(1.5, 1.5, 1.5)
 	self.collcone = newton.collision_addcone(1, 2)
 	self.collcapsule = newton.collision_addcapsule(0.5, 0.5, 0.75)
@@ -66,9 +65,9 @@ function init(self)
 	--self.collconvexhull = newton.collision_addconvexhull(24, vertcloud)
 
 	self.bodies = {}
-	self.ground = { 
-		index = newton.body_add(self.collplane, 0,0,0, 0),
-		coll = self.collplane,
+	self.physics_ground = { 
+		index = newton.body_add(self.collground, 0,0,0, 0),
+		coll = self.collground,
 		name = "plane",
 	}  -- infinite mass is 0
 	self.bodies.sphere1 = 
@@ -77,13 +76,11 @@ function init(self)
 		coll = self.collsphere ,
 		name = "sphere1",
 	}
-	
 	self.bodies.sphere2 = { 
 		index = newton.body_add(self.collsphere, 0,20,0, 1),
 		coll = self.collsphere ,
 		name = "sphere2",	
 	}
-
 	self.bodies.cube = { 
 		index = newton.body_add(self.collcube, 0,19,0, 2),
 		coll = self.collcube,
@@ -109,6 +106,8 @@ function init(self)
 		coll = self.collchamfercylinder,
 		name = "chamfercylinder",
 	}
+
+for k,v in pairs(self.bodies) do pprint(k,v.index) end 
 
 	local id = 1
 	for k,v in pairs(self.bodies) do 

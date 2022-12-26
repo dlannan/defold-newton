@@ -1,24 +1,6 @@
 
-// include the Defold SDK
-#include <dmsdk/sdk.h>
-#include <stdlib.h>
-#include <Newton.h>
-#include <vector>
-#include <map>
-
-#include <dMatrix.h>
-
-extern NewtonWorld* gWorld;
-
-extern std::map<uint64_t, NewtonBody*  > gBodies;
-extern std::map<uint64_t, NewtonCollision*> gColls;
-extern std::map<uint64_t, NewtonMesh* >gMeshes;
-
-
-extern std::map<uint64_t, int>   bodyUserData;
-extern std::map<NewtonBody* , int>   bodyCallback;
-
-extern lua_State *gCbL;
+#include "extension.h"
+#include "extension-collision.h"
 
 enum ShapeType {
 
@@ -32,20 +14,12 @@ enum ShapeType {
     Shape_ConvexHull      
 }; 
 
-extern uint64_t GetId();
-
-extern int SetTableVector( lua_State *L, dFloat *data, const char *name );
-extern void AddTableVertices( lua_State *L, int count, const double *vertices );
-extern void AddTableIndices( lua_State *L, int count, int *indices );
-extern void AddTableUVs( lua_State *L, int count, const dFloat *uvs );
-extern void AddTableNormals( lua_State *L, int count, const dFloat *normals );
-
 int addCollisionSphere( lua_State * L ) {
 
     double radii = lua_tonumber(L, 1);
     // Collision shapes: sphere (our ball), and large box (our ground plane).
     NewtonCollision* cs_object = NewtonCreateSphere(gWorld, radii, Shape_Sphere, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -57,7 +31,7 @@ int addCollisionSphere( lua_State * L ) {
     double depth = lua_tonumber(L, 2);
     // Collision shapes: sphere (our ball), and large box (our ground plane).
     NewtonCollision* cs_object = NewtonCreateBox(gWorld, width, 0.1, depth, Shape_Plane, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L,index);
     return 1;
@@ -69,7 +43,7 @@ int addCollisionCube( lua_State * L ) {
     double sy = lua_tonumber(L, 2);
     double sz = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateBox(gWorld, sx, sy, sz, Shape_Cube, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -80,7 +54,7 @@ int addCollisionCone( lua_State * L ) {
     double radius = lua_tonumber(L, 1);
     double height = lua_tonumber(L, 2);
     NewtonCollision* cs_object = NewtonCreateCone(gWorld, radius, height, Shape_Cone, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -92,7 +66,7 @@ int addCollisionCapsule( lua_State * L ) {
     double r1 = lua_tonumber(L, 2);
     double height = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateCapsule(gWorld, r0, r1, height, Shape_Capsule, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -104,7 +78,7 @@ int addCollisionCylinder( lua_State * L ) {
     double r1 = lua_tonumber(L, 2);
     double height = lua_tonumber(L, 3);
     NewtonCollision* cs_object = NewtonCreateCylinder(gWorld, r0, r1, height, Shape_Cylinder, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -115,7 +89,7 @@ int addCollisionChamferCylinder( lua_State * L ) {
     double radius = lua_tonumber(L, 1);
     double height = lua_tonumber(L, 2);
     NewtonCollision* cs_object = NewtonCreateChamferCylinder(gWorld, radius, height,Shape_ChamferCylinder, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -128,7 +102,7 @@ int addCollisionConvexHull( lua_State * L ) {
     double tolerance = lua_tonumber(L, 3);
     const float *vertCloud = (float *)lua_topointer(L, 4);
     NewtonCollision* cs_object = NewtonCreateConvexHull(gWorld, count, vertCloud, stride, tolerance, Shape_ConvexHull, NULL);
-    uint64_t index = GetId();
+    uint32_t index = GetId();
     gColls[index] = cs_object;
     lua_pushnumber(L, index);
     return 1;
@@ -148,9 +122,9 @@ int addCollisionConvexHull( lua_State * L ) {
 
 int destroyCollision(lua_State *L)
 {
-    int collindex = lua_tonumber(L, 1);
-	std::map<uint64_t, NewtonCollision*>::iterator it = gColls.find(collindex);
-    if(it != gColls.end()) {
+    uint32_t collindex = lua_tonumber(L, 1);
+	std::map<uint32_t, NewtonCollision*>::iterator it = gColls.find(collindex);
+    if(it == gColls.end()) {
         lua_pushnil(L);
         return 1;
     }
@@ -162,19 +136,19 @@ int destroyCollision(lua_State *L)
 
 int createMeshFromCollision( lua_State *L )
 {
-    int collindex = lua_tonumber(L, 1);
-	std::map<uint64_t, NewtonCollision*>::iterator it = gColls.find(collindex);
-    if(it != gColls.end()) {
+    uint32_t collindex = lua_tonumber(L, 1);
+	std::map<uint32_t, NewtonCollision*>::iterator it = gColls.find(collindex);
+    if(it == gColls.end()) {
         lua_pushnil(L);
         return 1;
     }
 
-    int mapping = lua_tonumber(L, 2);
+    uint32_t mapping = lua_tonumber(L, 2);
     const NewtonCollision *collision = gColls[collindex];
 
     NewtonMesh *mesh = NewtonMeshCreateFromCollision( collision );
     if(mesh) {
-        uint64_t index = GetId();
+        uint32_t index = GetId();
         gMeshes[index] = mesh;
         lua_pushnumber(L, index);
 

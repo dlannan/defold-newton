@@ -1,31 +1,11 @@
+#include "extension.h"
+#include "extension-body.h"
 
-// include the Defold SDK
-#include <dmsdk/sdk.h>
-#include <stdlib.h>
-#include <Newton.h>
-#include <vector>
-#include <map>
-
-#include <dMatrix.h>
-
-extern NewtonWorld* gWorld;
-
-extern std::map<uint64_t, NewtonBody*  > gBodies;
-extern std::map<uint64_t, NewtonCollision*> gColls;
-extern std::map<uint64_t, NewtonMesh* >gMeshes;
-
-
-extern std::map<uint64_t, int>   bodyUserData;
-extern std::map<NewtonBody* , int>   bodyCallback;
-
-extern lua_State *gCbL;
 
 // Define a custom data structure to store a body ID.
 struct UserData {
-    int bodyID=0;
+    uint32_t bodyID=0;
 };
-
-extern uint64_t GetId();
 
 void cb_applyForce(const NewtonBody* const body, dFloat timestep, int threadIndex)
 {
@@ -54,7 +34,7 @@ void cb_applyForce(const NewtonBody* const body, dFloat timestep, int threadInde
         0.0f, 0.0f, 0.0f, 1.0f
     };
 
-    int idx = lua_tonumber(L, 1);
+    uint32_t idx = lua_tonumber(L, 1);
     double x = lua_tonumber(L, 2);
     double y = lua_tonumber(L, 3);
     double z = lua_tonumber(L, 4);
@@ -78,8 +58,8 @@ void cb_applyForce(const NewtonBody* const body, dFloat timestep, int threadInde
 
  int bodyGetMass( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 2);
-	std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 2);
+	std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -99,15 +79,15 @@ void cb_applyForce(const NewtonBody* const body, dFloat timestep, int threadInde
 
 int bodySetMassProperties( lua_State *L )
 {
-    int collindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonCollision *>::iterator collit = gColls.find(collindex);
+    uint32_t collindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonCollision *>::iterator collit = gColls.find(collindex);
     if(collit == gColls.end())
 	{
         lua_pushnil(L);
         return 1;
     }
-    int bodyindex = lua_tonumber(L, 2);
-	std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 2);
+	std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end())
     {
         lua_pushnil(L);
@@ -123,8 +103,8 @@ int bodySetMassProperties( lua_State *L )
 
 int bodyGetUserData( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end())
     {
         lua_pushnil(L);
@@ -138,8 +118,8 @@ int bodyGetUserData( lua_State *L )
 
 int bodySetUserData( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -147,7 +127,7 @@ int bodySetUserData( lua_State *L )
 
     // Grab the ref to the table passed in as the second arg
     int tableref = luaL_ref(L, LUA_REGISTRYINDEX);
-    std::pair<uint64_t, int> tuple(bodyindex, tableref);
+    std::pair<uint32_t, int> tuple(bodyindex, tableref);
     bodyUserData.insert(tuple);
 
     //NewtonBodySetUserData(gBodies[bodyindex], &tuple.second());
@@ -157,8 +137,8 @@ int bodySetUserData( lua_State *L )
 
 int bodySetLinearDamping( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -171,8 +151,8 @@ int bodySetLinearDamping( lua_State *L )
 
 int bodySetAngularDamping( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -185,8 +165,8 @@ int bodySetAngularDamping( lua_State *L )
 
 int bodySetMassMatrix( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -202,8 +182,8 @@ int bodySetMassMatrix( lua_State *L )
 
 int bodyGetCentreOfMass( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
@@ -219,10 +199,9 @@ int bodyGetCentreOfMass( lua_State *L )
 
 void __applyForceAndTorqueCallback(const NewtonBody* body, dFloat timestep, int threadIndex) 
 {
-    int bodyindex = -1;
-    int idx = 0;
+    uint32_t bodyindex = 0;
 
-    std::map<uint64_t, NewtonBody *>::iterator bodyit;
+    std::map<uint32_t, NewtonBody *>::iterator bodyit;
     for( bodyit = gBodies.begin(); bodyit != gBodies.end(); ++bodyit ) {
         if(bodyit->second == body) {
             bodyindex = bodyit->first;
@@ -230,7 +209,7 @@ void __applyForceAndTorqueCallback(const NewtonBody* body, dFloat timestep, int 
         }
     }
 
-    if( bodyindex == -1 ) {
+    if( bodyindex == 0 ) {
         printf("error no body index found.");
     }
 
@@ -249,8 +228,8 @@ void __applyForceAndTorqueCallback(const NewtonBody* body, dFloat timestep, int 
 
 int bodySetForceAndTorqueCallback( lua_State *L )
 {
-    int bodyindex = lua_tonumber(L, 1);
-    std::map<uint64_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
+    uint32_t bodyindex = lua_tonumber(L, 1);
+    std::map<uint32_t, NewtonBody *>::iterator bodyit = gBodies.find(bodyindex);
     if(bodyit == gBodies.end()) {
         lua_pushnil(L);
         return 1;
