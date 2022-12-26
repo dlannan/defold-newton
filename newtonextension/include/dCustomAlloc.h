@@ -24,13 +24,7 @@
 
 #include <dgTypes.h>
 
-#ifdef _CUSTOM_JOINTS_STATIC_LIB
-	#define CUSTOM_JOINTS_API DG_LIBRARY_STATIC
-#elif defined(_CUSTOM_JOINTS_BUILD_DLL)
-	#define CUSTOM_JOINTS_API DG_LIBRARY_EXPORT
-#else
-	#define CUSTOM_JOINTS_API DG_LIBRARY_IMPORT
-#endif
+#define CUSTOM_JOINTS_API DG_LIBRARY_STATIC
 
 class dCustomScopeLock
 {

@@ -15,8 +15,6 @@
 #include "dStdAfxNewton.h"
 #include "dNewtonAlloc.h"
 
-
-
 class dMaterialPairManager: public dNewtonAlloc
 {
 	public:

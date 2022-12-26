@@ -29,8 +29,6 @@
 //#include <dgTypes.h>
 
 #if defined(_MSC_VER)
-	#define DG_LIBRARY_EXPORT __declspec(dllexport)
-	#define DG_LIBRARY_IMPORT __declspec(dllimport)
 	#define DG_LIBRARY_STATIC
 #else
 	#define DG_LIBRARY_EXPORT __attribute__((visibility("default")))
@@ -38,13 +36,7 @@
 	#define DG_LIBRARY_STATIC
 #endif
 
-#ifdef _NEWTON_STATIC_LIB
-	#define NEWTON_API DG_LIBRARY_STATIC
-#elif defined(_NEWTON_BUILD_DLL)
-	#define NEWTON_API DG_LIBRARY_EXPORT
-#else
-	#define NEWTON_API DG_LIBRARY_IMPORT
-#endif
+#define NEWTON_API DG_LIBRARY_STATIC
 
 
 #ifndef dLong

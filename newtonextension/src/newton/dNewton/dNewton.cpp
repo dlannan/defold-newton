@@ -231,8 +231,8 @@ void dNewton::ResetTimer()
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
 		QueryPerformanceCounter (&baseCount);
-		m_baseCount = dLong (baseCount.QuadPart);
-		m_frequency = dLong (frequency.QuadPart);
+		m_baseCount = (dLong) (baseCount.QuadPart);
+		m_frequency = (dLong) (frequency.QuadPart);
 	#endif
 
 	//#if (defined (_POSIX_VER) || defined (_POSIX_VER_64))

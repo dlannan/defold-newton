@@ -42,7 +42,8 @@ platforms:
 
     x86-win32:
         context:
-            defines: ["_NEWTON_BUILD_DLL"]
+            defines: [ "_MS_VER", "DG_SCALAR_VECTOR_CLASS" ]
+            flags: ["-stdlib=libc++"]
             excludeLibs: ["libphysics","libLinearMath","libBulletDynamics","libBulletCollision","libBox2D"]
             excludeSymbols: []
             symbols: []
@@ -51,6 +52,7 @@ platforms:
 
     x86_64-win32:
         context:
+            defines: [ "_MS_VER", "DG_SCALAR_VECTOR_CLASS" ]
             flags: ["-stdlib=libc++"]
             excludeLibs: ["libphysics","libLinearMath","libBulletDynamics","libBulletCollision","libBox2D"]
             excludeSymbols: []

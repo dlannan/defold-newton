@@ -24,13 +24,7 @@
 #define _D_NEWTON_H__
 
 
-#ifdef _CNEWTON_STATIC_LIB
-	#define CNEWTON_API DG_LIBRARY_STATIC
-#elif defined(_CNEWTON_BUILD_DLL)
-	#define CNEWTON_API DG_LIBRARY_EXPORT
-#else
-	#define CNEWTON_API DG_LIBRARY_IMPORT
-#endif
+#define CNEWTON_API DG_LIBRARY_STATIC
 
 
 #ifdef _WIN32

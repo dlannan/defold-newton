@@ -231,8 +231,6 @@
 #endif
 
 #if defined(_MSC_VER)
-	#define DG_LIBRARY_EXPORT __declspec(dllexport)
-	#define DG_LIBRARY_IMPORT __declspec(dllimport)
 	#define DG_LIBRARY_STATIC
 #else
 	#define DG_LIBRARY_EXPORT __attribute__((visibility("default")))
