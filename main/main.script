@@ -40,6 +40,24 @@ end
 
 -- --------------------------------------------------------------------------------------------------------
 
+local function MakeMesh(k, name, coll)
+
+	local mesh =  mpool.gettemp( name )
+	
+	local mapping = 1
+	if(k == "cube") then mapping = 3 end 
+	if(k == "sphere") then mapping = 1 end 
+	if(k == "cylinder" or k == "chamfercylinder" or k == "capsule" ) then mapping = 2 end 
+	
+	local mid, indices, verts, uvs, normals = newton.createmeshfromcollision( coll, mapping )
+	local meshname = mesh.."#temp"
+	geom:GenerateFromMesh( meshname, verts, indices, uvs, normals )
+	imageutils.loadimage( meshname, "/assets/images/blue.png", 0 )	
+	return meshname, mesh
+end 
+
+-- --------------------------------------------------------------------------------------------------------
+
 function init(self)
 
 	msg.post(".", "acquire_input_focus")
@@ -58,6 +76,7 @@ function init(self)
 	self.collground = newton.collision_addplane(100, 100)
 	self.collsphere = newton.collision_addsphere(1)
 	self.collcube = newton.collision_addcube(1.5, 1.5, 1.5)
+	self.collvehicle = newton.collision_addcube(3.0, 0.5, 5.0)
 	self.collcone = newton.collision_addcone(1, 2)
 	self.collcapsule = newton.collision_addcapsule(0.5, 0.5, 0.75)
 	self.collcylinder = newton.collision_addcylinder(0.7, 0.7, 2.0)
@@ -70,62 +89,69 @@ function init(self)
 		coll = self.collground,
 		name = "plane",
 	}  -- infinite mass is 0
-	self.bodies.sphere1 = 
-	{ 
-		index = newton.body_add(self.collsphere, 00,10,0, 2),
-		coll = self.collsphere ,
-		name = "sphere1",
+-- 	self.bodies.sphere1 = 
+-- 	{ 
+-- 		index = newton.body_add(self.collsphere, 00,10,0, 2),
+-- 		coll = self.collsphere ,
+-- 		name = "sphere1",
+-- 	}
+-- 	self.bodies.sphere2 = { 
+-- 		index = newton.body_add(self.collsphere, 0,20,0, 1),
+-- 		coll = self.collsphere ,
+-- 		name = "sphere2",	
+-- 	}
+-- 	self.bodies.cube = { 
+-- 		index = newton.body_add(self.collcube, 0,19,0, 2),
+-- 		coll = self.collcube,
+-- 		name = "cube",
+-- 	}
+-- 
+	self.bodies.vehicle = { 
+		index = newton.body_add(self.collvehicle, 0, 19, 0, 2),
+		coll = self.collvehicle,
+		name = "vehicle",
 	}
-	self.bodies.sphere2 = { 
-		index = newton.body_add(self.collsphere, 0,20,0, 1),
-		coll = self.collsphere ,
-		name = "sphere2",	
+	self.bodies.vehicle.multibody =  { }
+	local vid = newton.vehicle_add( self.bodies.vehicle.index, 0, 19, 0 )
+	self.bodies.vehicle.multibody.vid = vid
+	self.bodies.vehicle.multibody.wheels = { 
+		newton.vehicle_addtire(vid, 0.15, 1.5, -2, 0.0, -2.0),
+		newton.vehicle_addtire(vid, 0.15, 1.5, 2, 0.0, -2.0),
+		newton.vehicle_addtire(vid, 0.15, 1.5, -2, 0.0, 2.0),
+		newton.vehicle_addtire(vid, 0.15, 1.5, 2, 0.0, 2.0),
 	}
-	self.bodies.cube = { 
-		index = newton.body_add(self.collcube, 0,19,0, 2),
-		coll = self.collcube,
-		name = "cube",
-	}
-	self.bodies.cone = { 
-		index = newton.body_add(self.collcone, 0,18,0, 3) ,
-		coll = self.collcone,
-		name = "cone",
-	}
-	self.bodies.capsule = { 
-		index = newton.body_add(self.collcapsule, 0,17,4, 1) ,
-		coll = self.collcapsule,
-		name = "capsule",
-	}
-	self.bodies.cylinder = { 
-		index = newton.body_add(self.collcylinder, 0, 16,5, 1),
-		coll = self.collcylinder,
-		name = "cylinder",
-	}
-	self.bodies.chamfercylinder = { 
-		index = newton.body_add(self.collchamfercylinder, 0,15,6, 1) ,
-		coll = self.collchamfercylinder,
-		name = "chamfercylinder",
-	}
+	
+	-- self.bodies.cone = { 
+	-- 	index = newton.body_add(self.collcone, 0,18,0, 3) ,
+	-- 	coll = self.collcone,
+	-- 	name = "cone",
+	-- }
+	-- self.bodies.capsule = { 
+	-- 	index = newton.body_add(self.collcapsule, 0,17,4, 1) ,
+	-- 	coll = self.collcapsule,
+	-- 	name = "capsule",
+	-- }
+	-- self.bodies.cylinder = { 
+	-- 	index = newton.body_add(self.collcylinder, 0, 16,5, 1),
+	-- 	coll = self.collcylinder,
+	-- 	name = "cylinder",
+	-- }
+	-- self.bodies.chamfercylinder = { 
+	-- 	index = newton.body_add(self.collchamfercylinder, 0,15,6, 1) ,
+	-- 	coll = self.collchamfercylinder,
+	-- 	name = "chamfercylinder",
+	-- }
 
-for k,v in pairs(self.bodies) do pprint(k,v.index) end 
-
-	local id = 1
 	for k,v in pairs(self.bodies) do 
 		print(k)
-		id = id + 1
-		v.geom =  mpool.gettemp( v.name )
-		local mapping = 1
-		if(k == "cube") then mapping = 3 end 
-		if(k == "sphere") then mapping = 1 end 
-		if(k == "cylinder" or k == "chamfercylinder" or k == "capsule" ) then mapping = 2 end 
-		local mid, indices, verts, uvs, normals = newton.createmeshfromcollision( v.coll, mapping )
-		if(k == "cube") then 
-			pprint(verts)
-			pprint(indices)
+		_, v.geom = MakeMesh(k, v.name, v.coll)
+		if(v.name == "vehicle") then 
+			v.multibody.wheelmeshes = {}
+			for i, j in ipairs(v.multibody.wheels) do
+				print(i,j)
+				_, v.multibody.wheelmeshes[i] = MakeMesh("wheel"..k, v.name.."wheel"..i, j)
+			end 
 		end
-		v.meshname = v.geom.."#temp"
-		geom:GenerateFromMesh( v.meshname, verts, indices, uvs, normals )
-		imageutils.loadimage( v.meshname, "/assets/images/blue.png", 0 )	
 	end 
 
 	camdrive.init("/camera")
@@ -199,10 +225,10 @@ function on_input(self, action_id, action)
 
 	if(action.pressed) then 
 		if action_id == hash("camerafwd") then
-			camdrive.speed = 12.0
+			camdrive.speed = 62.0
 		end 
 		if action_id == hash("camerabck") then
-			camdrive.speed = -12.0
+			camdrive.speed = -62.0
 		end 
 		if action_id == hash("cameraleft") then
 		end 

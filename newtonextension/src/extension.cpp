@@ -14,6 +14,7 @@
 
 #include "extension-collision.h"
 #include "extension-body.h"
+#include "extension-vehicle.h"
 
 NewtonWorld* gWorld = NULL;
 
@@ -43,6 +44,8 @@ static int Create( lua_State *L )
     // Create the Newton world.
     gWorld = NewtonCreate();
     NewtonInvalidateCache(gWorld);
+
+    VehiclesInit();
     return 0;
 }
 
@@ -130,6 +133,10 @@ static const luaL_reg Module_methods[] =
     {"body_setforceandtorquecallback", bodySetForceAndTorqueCallback },
 
     {"createmeshfromcollision", createMeshFromCollision },
+
+    {"vehicle_add", VehicleAdd },
+    {"vehicle_addtire", VehicleAddTire },
+    {"vehicle_remove", VehicleRemove },
     {0, 0}
 };
 
@@ -167,6 +174,8 @@ dmExtension::Result AppFinalizeNewtonExtension(dmExtension::AppParams* params)
 dmExtension::Result FinalizeNewtonExtension(dmExtension::Params* params)
 {
     dmLogInfo("FinalizeNewtonExtension\n");
+
+    VehiclesShutdown();
     Close();
     return dmExtension::RESULT_OK;
 }
